@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <html lang="en"> <!-- manifest="manifest.appcache"> -->
-
-
-
 <head>
 
     <meta charset="UTF-8">
@@ -19,24 +16,25 @@
     <title>Compass</title>
 
     <link rel="stylesheet" href="css/app.css">
-
+    <script type="text/javascript" src="./js/jquery-3.2.1.min.js"></script>
+    <script src="https://cdn.firebase.com/js/client/2.3.2/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.7.8/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "",
+        authDomain: "",
+        databaseURL: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: ""
+      };
+      firebase.initializeApp(config);
+    </script>
 </head>
 
-
-
 <body>
-
-
-
-  <header>
-    <h1>Compass</h1>
-  </header>
-
-
-
   <div class="container">
-
-
 
     <div class="compass">
 
@@ -50,10 +48,7 @@
           <polyline points="63,121  67,121  65,119" fill="white"/>
           <polyline points="9,63  9,67  11,65" fill="white"/>
 
-          <text x="65" y="4.2" font-size="5" text-anchor="middle" fill="white">N</text>
-          <text x="127" y="67" font-size="5" text-anchor="middle" fill="white">E</text>
-          <text x="65" y="129" font-size="5" text-anchor="middle" fill="white">S</text>
-          <text x="2.8" y="67" font-size="5" text-anchor="middle" fill="white">W</text>
+          <text x="65" y="4.2" font-size="8" text-anchor="middle" fill="red">●</text>
 
         </svg>
 
@@ -178,10 +173,7 @@
       <div id="popup-contents" class="popup__contents">
         <div id="popup-inner-info" class="popup__inner popup__inner--hide">
           <p>
-          For best results calibrate the accelerometer in your device by tracing out a figure of 8 in the air several times vertically and horizontally. The heading can also be affected by nearby magnetic fields.
-          </p>
-          <p>
-          For more information, bugs or comments please visit <a href='https://github.com/lamplightdev/compass'>the repo on github</a>.
+          ・・・・・・・・・
           </p>
         </div>
 

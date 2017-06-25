@@ -1,6 +1,4 @@
 (function () {
-  "use strict";
-
   //set to true for debugging output
   var debug = false;
 
@@ -11,21 +9,23 @@
     hng: null
   };
 
+  var targetNumber = document.location.search.substring(1);
+  var targetLatitude = 0;
+  var targetLongitude = 0;
+  var targetAzimuth = 0;
+  var dataStore = new Firebase('');
 
   // the outer part of the compass that rotates
   var rose = document.getElementById("rose");
-
 
   // elements that ouput our position
   var positionLat = document.getElementById("position-lat");
   var positionLng = document.getElementById("position-lng");
   var positionHng = document.getElementById("position-hng");
 
-
   // debug outputs
   var debugOrientation = document.getElementById("debug-orientation");
   var debugOrientationDefault = document.getElementById("debug-orientation-default");
-
 
   // info popup elements, pus buttons that open popups
   var popup = document.getElementById("popup");
@@ -33,27 +33,22 @@
   var popupInners = document.querySelectorAll(".popup__inner");
   var btnsPopup = document.querySelectorAll(".btn-popup");
 
-
   // buttons at the bottom of the screen
   var btnLockOrientation = document.getElementById("btn-lock-orientation");
   var btnNightmode = document.getElementById("btn-nightmode");
   var btnMap = document.getElementById("btn-map");
   var btnInfo = document.getElementById("btn-info");
 
-
   // if we have shown the heading unavailable warning yet
   var warningHeadingShown = false;
-
 
   // switches keeping track of our current app state
   var isOrientationLockable = false;
   var isOrientationLocked = false;
   var isNightMode = false;
 
-
   // the orientation of the device on app load
   var defaultOrientation;
-
 
   // browser agnostic orientation
   function getBrowserOrientation() {
@@ -189,11 +184,11 @@
         }
       }
 
-      positionCurrent.hng = heading + adjustment;
+      //相手のいる方位角からデバイスの方位角を引く。
+      positionCurrent.hng = targetAzimuth - heading + adjustment;
 
       var phase = positionCurrent.hng < 0 ? 360 + positionCurrent.hng : positionCurrent.hng;
       positionHng.textContent = (360 - phase | 0) + "°";
-
 
       // apply rotation to compass rose
       if (typeof rose.style.transform !== "undefined") {
@@ -207,6 +202,33 @@
       positionHng.textContent = "n/a";
       showHeadingWarning();
     }
+  }
+
+  // この計算では緯度・経度ともに1度以上にわたる広い範囲には適用できません。
+  // 緯度・経度が数分以内のごく狭い範囲に限って適用可能です。
+  // 距離はメートル単位で返され、方位角は真東を0として±180度の範囲で返されます。
+
+  var R_EARTH = 6378137;			// 地球の赤道半径
+  var RAD = Math.PI / 180;	// 1°あたりのラジアン
+
+  // 2点間の方位角を求める関数
+  function azimuth(lat1, lon1, lat2, lon2) {
+  	// 度をラジアンに変換
+  	lat1 *= RAD;
+  	lon1 *= RAD;
+  	lat2 *= RAD;
+  	lon2 *= RAD;
+
+  	var lat_c = (lat1 + lat2) / 2;					// 緯度の中心値
+  	var dx = R_EARTH * (lon2 - lon1) * Math.cos(lat_c);
+  	var dy = R_EARTH * (lat2 - lat1);
+
+  	if (dx == 0 && dy == 0) {
+  		return 0;	// dx, dyともに0のときは強制的に0とする。
+  	}
+  	else {
+  		return Math.atan2(dy, dx) / RAD;	// 結果は度単位で返す
+  	}
   }
 
   function showHeadingWarning() {
@@ -305,6 +327,14 @@
 
     positionLat.textContent = decimalToSexagesimal(positionCurrent.lat, "lat");
     positionLng.textContent = decimalToSexagesimal(positionCurrent.lng, "lng");
+
+    //自分と相手の緯度・経度から相手の居る方位角を計算。真東を0としているので、90から引く。
+    targetAzimuth = 90 - azimuth(positionCurrent.lat, positionCurrent.lng, targetLatitude, targetLongitude).toFixed(2);
+
+    if (0 > targetAzimuth){
+      targetAzimuth = 360 + targetAzimuth;
+      }
+
   }
 
   function locationUpdateFail(error) {
@@ -312,6 +342,21 @@
     positionLng.textContent = "n/a";
     console.log("location fail: ", error);
   }
+
+  dataStore.child(``).on('child_added',function(data){
+    var json = data.val();
+
+    targetLatitude = json['latitude'];
+    targetLongitude = json['longitude'];
+
+    //自分と相手の緯度・経度から相手の居る方位角を計算。真東を0としているので、90から引く。
+    targetAzimuth = 90 - azimuth(positionCurrent.lat, positionCurrent.lng, targetLatitude, targetLongitude).toFixed(2);
+
+    if (0 > targetAzimuth){
+      targetAzimuth = 360 + targetAzimuth;
+      }
+
+  });
 
   function setNightmode(on) {
 
@@ -413,7 +458,7 @@
   popupContents.addEventListener("click", popupContentsClick);
 
   navigator.geolocation.watchPosition(locationUpdate, locationUpdateFail, {
-    enableHighAccuracy: false,
+    enableHighAccuracy: true,
     maximumAge: 30000,
     timeout: 27000
   });
